@@ -1,0 +1,145 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile for customers, riders, and admins.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["customer", "rider", "admin"] },
+        "phoneNumber": { "type": "string" },
+        "addresses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string" },
+              "address": { "type": "string" },
+              "isDefault": { "type": "boolean" }
+            }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Organic grocery item.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "stockLevel": { "type": "integer" },
+        "unit": { "type": "string" },
+        "isFeatured": { "type": "boolean" },
+        "supplierId": { "type": "string" }
+      },
+      "required": ["name", "price", "category", "stockLevel"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer grocery order.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderNumber": { "type": "string" },
+        "customerId": { "type": "string" },
+        "riderId": { "type": "string" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "productId": { "type": "string" },
+              "name": { "type": "string" },
+              "quantity": { "type": "integer" },
+              "price": { "type": "number" },
+              "costPrice": { "type": "number" }
+            }
+          }
+        },
+        "totalAmount": { "type": "number" },
+        "deliveryFee": { "type": "number" },
+        "deliveryCost": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "packing", "assigned", "picked_up", "delivered", "cancelled"] },
+        "deliveryAddress": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerId", "items", "totalAmount", "status", "orderNumber"]
+    },
+    "Cost": {
+      "title": "Cost",
+      "description": "Business operating costs.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "category": { "type": "string", "enum": ["operating", "marketing", "logistics", "tax", "other"] },
+        "date": { "type": "string", "format": "date" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["description", "amount", "category", "date"]
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "description": "Grocery inventory supplier.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "contactPerson": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "categories": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "News": {
+      "title": "News",
+      "description": "News updates and coming soon products.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "imageCaption": { "type": "string" },
+        "isComingSoon": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "published": { "type": "boolean" }
+      },
+      "required": ["title", "content", "createdAt", "published"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "User",
+      "description": "User profiles and roles."
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Product catalog and inventory."
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Customer orders and tracking."
+    },
+    "/suppliers/{supplierId}": {
+      "schema": "Supplier",
+      "description": "Inventory suppliers."
+    },
+    "/news/{newsId}": {
+      "schema": "News",
+      "description": "News and updates."
+    }
+  }
+}

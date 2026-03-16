@@ -1,0 +1,7 @@
+{
+  "name": "Jaza Freshi",
+  "description": "Uganda's premium organic grocery platform with integrated rider logistics and financial monitoring for seamless farm-to-table delivery.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

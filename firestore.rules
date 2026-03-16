@@ -1,0 +1,105 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // User: { uid, email, role, displayName, phoneNumber, addresses, createdAt }
+    // Product: { id, name, description, price, category, imageUrl, stockLevel, unit, isFeatured, supplierId }
+    // Order: { id, orderNumber, customerId, riderId, items, totalAmount, deliveryFee, deliveryCost, status, deliveryAddress, createdAt, updatedAt }
+    // Supplier: { id, name, contactPerson, email, phone, categories }
+    // Cost: { id, description, amount, category, date, createdAt }
+    // News: { id, title, content, imageUrl, imageCaption, isComingSoon, createdAt, updatedAt, published }
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        (request.auth.token.email == "bonnynambula@gmail.com" && request.auth.token.email_verified == true) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isRider() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'rider';
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Validator Functions
+    function isValidUser(data) {
+      return data.uid is string && 
+             data.email is string && 
+             data.role in ['customer', 'rider', 'admin'];
+    }
+
+    function isValidProduct(data) {
+      return data.name is string && data.name.size() > 0 &&
+             data.price is number && data.price > 0 &&
+             data.category is string &&
+             data.stockLevel is int;
+    }
+
+    function isValidOrder(data) {
+      return data.customerId is string &&
+             data.items is list &&
+             data.totalAmount is number &&
+             data.status in ['pending', 'packing', 'assigned', 'picked_up', 'delivered', 'cancelled'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && request.auth.uid == userId && isValidUser(request.resource.data) && request.resource.data.role == 'customer';
+      allow update: if isAuthenticated() && (
+        (isOwner(userId) && request.resource.data.role == resource.data.role && isValidUser(request.resource.data)) || 
+        isAdmin()
+      );
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidProduct(request.resource.data);
+    }
+
+    match /orders/{orderId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.customerId || 
+        request.auth.uid == resource.data.riderId || 
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && request.resource.data.customerId == request.auth.uid && isValidOrder(request.resource.data);
+      allow update: if isAuthenticated() && (
+        (request.auth.uid == resource.data.customerId && request.resource.data.status == 'cancelled' && resource.data.status == 'pending' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])) ||
+        (isRider() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'riderId'])) ||
+        isAdmin()
+      );
+    }
+
+    match /suppliers/{supplierId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /news/{newsId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /costs/{costId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
